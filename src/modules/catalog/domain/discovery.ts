@@ -14,19 +14,21 @@ const suitabilityScore = {
 } as const;
 
 /**
- * Rank only Bro-v-Bro-worthy challenges from the games both players can access.
- * The library intersection is an eligibility signal, not the recommendation.
+ * Rank Bro-v-Bro-worthy challenges from games both players can access.
+ * Existing pool entries are excluded so the result can be rendered directly
+ * as an Add-oriented suggestion rail beneath the editable match pool.
  *
- * This intentionally stays deterministic/simple for MVP; template usage and
- * telemetry can become additional weights later without changing the caller.
+ * Library intersection is an eligibility signal, never recommendation evidence.
  */
 export function rankChallengeSuggestions(
   presets: readonly ChallengePreset[],
   eligibleGameIds: ReadonlySet<string>,
   pinnedPresetIds: ReadonlySet<string> = new Set(),
+  selectedPresetIds: ReadonlySet<string> = new Set(),
 ): readonly ChallengeSuggestion[] {
   return presets
     .filter((preset) => eligibleGameIds.has(preset.gameId))
+    .filter((preset) => !selectedPresetIds.has(preset.id))
     .filter((preset) => preset.suitability !== "manual-only" || pinnedPresetIds.has(preset.id))
     .map((preset) => {
       const reasons: string[] = [];
