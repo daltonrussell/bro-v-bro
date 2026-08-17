@@ -21,13 +21,14 @@ export type BroVBroTemplate = {
 };
 
 /**
- * Templates are starting points, not locked tournaments. For the normal Bro v Bro
- * format they usually define the shared challenge pool while loser-picks-next
- * determines the actual play order. Ordered replay remains available for formats
- * where reproducing the exact sequence matters.
+ * Templates seed an editable match pool; they are not locked tournaments.
+ * Compatibility is shown per item, but the product never auto-replaces a game.
+ * Players can remove entries, change supported rulesets, and add mutually
+ * accessible suggestions before the match begins.
  *
- * When applied to a pair of players, unavailable challenges are flagged and can
- * be swapped before the Bro v Bro begins.
+ * For normal Bro v Bro matches the template defines the pool while
+ * loser-picks-next determines actual play order. Ordered replay remains
+ * available for formats where reproducing a known sequence matters.
  */
 export const demoTemplates: readonly BroVBroTemplate[] = [
   {
@@ -39,7 +40,7 @@ export const demoTemplates: readonly BroVBroTemplate[] = [
     challengePresetIds: [
       "cs2-1v1",
       "rocket-league-1v1",
-      "geoguessr-no-move",
+      "geoguessr-duel",
       "wikipedia-race-standard",
       "nidhogg-standard",
     ],
@@ -54,7 +55,7 @@ export const demoTemplates: readonly BroVBroTemplate[] = [
     challengePresetIds: [
       "ultimate-chicken-horse-race",
       "wikipedia-race-standard",
-      "geoguessr-no-move",
+      "geoguessr-duel",
       "nidhogg-standard",
     ],
     featured: true,
