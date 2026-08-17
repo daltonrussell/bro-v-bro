@@ -92,18 +92,21 @@ export class ChallengeService {
     const challenge = this.requireChallenge(input.challengeId);
     const role = this.resolveViewer(input.challengeId, input.token);
     if (!role || role === "invitee") throw new Error("Participant token required");
-    if (challenge.status === "started" && input.command.type !== "start") throw new Error("Challenge has already started");
 
     if (input.command.type === "start") {
       if (role !== "host") throw new Error("Only the host can start the Bro v Bro");
-      return { challenge: await this.start(challenge), sessionId: challenge.sessionId };
+      if (challenge.sessionId) return { challenge, sessionId: challenge.sessionId };
+      const next = await this.start(challenge);
+      return { challenge: next, sessionId: next.sessionId };
     }
+    if (challenge.status === "started") throw new Error("Challenge has already started");
 
     let next = challenge;
     switch (input.command.type) {
       case "add": {
         this.assertHost(role);
         const preset = this.preset(input.command.presetId);
+        this.assertGameNotAlreadyRepresented(challenge, preset.id, preset.gameId);
         next = addPoolItem(challenge, preset, input.command.source ?? "search", input.command.ruleVariantId);
         break;
       }
@@ -119,6 +122,7 @@ export class ChallengeService {
       case "suggest-add": {
         this.assertGuest(role);
         const preset = this.preset(input.command.presetId);
+        this.assertGameNotAlreadyRepresented(challenge, preset.id, preset.gameId);
         const ruleVariantId = input.command.ruleVariantId ?? preset.defaultRuleVariantId;
         getRuleVariant(preset, ruleVariantId);
         next = addProposal(challenge, this.proposal("add-challenge", preset.id, ruleVariantId));
@@ -206,6 +210,14 @@ export class ChallengeService {
 
   private proposal(type: PoolProposal["type"], presetId: string, ruleVariantId: string): PoolProposal {
     return { id: randomUUID(), type, presetId, ruleVariantId, createdAt: new Date().toISOString() } as PoolProposal;
+  }
+
+  private assertGameNotAlreadyRepresented(challenge: Challenge, presetId: string, gameId: string) {
+    const duplicate = challenge.pool.some((item) => {
+      if (item.presetId === presetId) return false;
+      return this.preset(item.presetId).gameId === gameId;
+    });
+    if (duplicate) throw new Error("That game is already represented in the pool");
   }
 
   private assertHost(role: ChallengeViewerRole): asserts role is "host" {
