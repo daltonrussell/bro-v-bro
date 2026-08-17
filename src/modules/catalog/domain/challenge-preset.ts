@@ -13,12 +13,20 @@ export type ChallengeTag =
   | "luck-neutral"
   | "creator-popular";
 
+export type RuleVariant = {
+  id: string;
+  label: string;
+  description?: string;
+  setupNotes?: string;
+};
+
 /**
- * A ChallengePreset is the atomic thing a Bro v Bro actually competes in.
- * Sometimes that maps 1:1 to a game (Nidhogg); sometimes it is a curated
- * format inside a larger game (Dota 2 -> 1v1 Mid).
+ * A ChallengePreset is the curated competitive mode Bro v Bro can suggest.
+ * Sometimes that maps 1:1 to a game (Nidhogg); sometimes it is a focused mode
+ * inside a larger game (Dota 2 -> 1v1 Mid).
  *
- * Presets are intentionally curated rather than user-configurable rulesets.
+ * Presets may expose a small curated set of editable rule variants. This gives
+ * players useful flexibility without turning setup into a free-form rules engine.
  */
 export type ChallengePreset = {
   id: string;
@@ -28,9 +36,13 @@ export type ChallengePreset = {
   description: string;
   suitability: Exclude<BroVBroSuitability, "not-suitable">;
   tags: readonly ChallengeTag[];
+  ruleVariants: readonly RuleVariant[];
+  defaultRuleVariantId: string;
   setupNotes?: string;
   defaultForGame?: boolean;
 };
+
+const standardRule = (): readonly RuleVariant[] => [{ id: "standard", label: "Standard" }];
 
 export const demoChallengePresets: readonly ChallengePreset[] = [
   {
@@ -41,6 +53,8 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "Classic mid-lane duel. Add it directly instead of treating all of Dota 2 as a generic round.",
     suitability: "featured",
     tags: ["classic-1v1", "strategy", "mechanical", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     setupNotes: "Create a private lobby and use the agreed 1v1 mid setup.",
     defaultForGame: true,
   },
@@ -52,6 +66,8 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "A direct CS2 duel on a mutually agreed 1v1/aim setup.",
     suitability: "featured",
     tags: ["classic-1v1", "fps", "mechanical", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
   {
@@ -62,6 +78,8 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "Standard head-to-head Rocket League duel.",
     suitability: "featured",
     tags: ["classic-1v1", "sports", "mechanical", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
   {
@@ -72,6 +90,8 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "The base game is already an excellent compact head-to-head competition.",
     suitability: "featured",
     tags: ["classic-1v1", "fighting", "mechanical", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
   {
@@ -82,16 +102,36 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "Competitive obstacle-building rounds; particularly good as a change-of-pace Bro v Bro pick.",
     suitability: "featured",
     tags: ["party", "mechanical", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
   {
-    id: "geoguessr-no-move",
+    id: "geoguessr-duel",
     gameId: "geoguessr",
-    name: "GeoGuessr — No Move",
-    shortLabel: "No Move",
-    description: "Geography duel where neither player moves from the starting location.",
+    name: "GeoGuessr",
+    shortLabel: "GeoGuessr",
+    description: "Head-to-head geography challenge with a small set of common Bro v Bro rulesets.",
     suitability: "featured",
     tags: ["geography", "knowledge", "creator-popular"],
+    ruleVariants: [
+      {
+        id: "no-move",
+        label: "No Move",
+        description: "Players may pan and zoom but cannot move from the starting location.",
+      },
+      {
+        id: "no-move-no-zoom",
+        label: "No Move + No Zoom",
+        description: "Players stay at the starting location and cannot zoom.",
+      },
+      {
+        id: "no-rules",
+        label: "No Rules",
+        description: "Moving, panning, and zooming are all allowed.",
+      },
+    ],
+    defaultRuleVariantId: "no-move",
     defaultForGame: true,
   },
   {
@@ -102,6 +142,8 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "Start from the same page and race through links to the same target page.",
     suitability: "featured",
     tags: ["knowledge", "luck-neutral", "creator-popular"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
   {
@@ -112,10 +154,24 @@ export const demoChallengePresets: readonly ChallengePreset[] = [
     description: "Straightforward head-to-head chess game.",
     suitability: "recommended",
     tags: ["classic-1v1", "strategy"],
+    ruleVariants: standardRule(),
+    defaultRuleVariantId: "standard",
     defaultForGame: true,
   },
 ] as const;
 
 export function getChallengePresetsForGame(gameId: string): readonly ChallengePreset[] {
   return demoChallengePresets.filter((preset) => preset.gameId === gameId);
+}
+
+export function getRuleVariant(preset: ChallengePreset, ruleVariantId: string): RuleVariant {
+  const variant = preset.ruleVariants.find((candidate) => candidate.id === ruleVariantId);
+  if (!variant) throw new Error(`Unknown rule variant ${ruleVariantId} for ${preset.id}`);
+  return variant;
+}
+
+export function formatChallengeSelection(preset: ChallengePreset, ruleVariantId: string): string {
+  const variant = getRuleVariant(preset, ruleVariantId);
+  if (preset.ruleVariants.length === 1 && variant.id === "standard") return preset.name;
+  return `${preset.name} — ${variant.label}`;
 }
