@@ -1,161 +1,99 @@
-# Game discovery, challenge presets, and templates
+# Game discovery, editable pools, and templates
 
-## Decision
+## Core decision
 
 A Steam/library import is **not** the Bro v Bro game picker.
 
-It answers one question:
+- library/access data answers: **what can these two players access?**
+- the curated challenge catalog answers: **what is actually worth competing in?**
+- the match pool answers: **what do these two players want available in this Bro v Bro?**
 
-> What can these two players access?
+Shared ownership is an eligibility signal, never sufficient recommendation evidence.
 
-The product answers a different question:
+## Product layers
 
-> Which competitions are actually worth putting in a Bro v Bro?
+### 1. Player access
 
-Those concerns stay separate.
+Provider imports (Steam first), manual declarations, and global/browser availability build each player's access set. A title such as Cyberpunk 2077 can be present here without ever becoming a default suggestion.
 
-## Three-layer model
+### 2. Challenge presets and rule variants
 
-### 1. Player game access
+A `ChallengePreset` is a curated competition mode rather than merely a game title: `Dota 2 — 1v1 Mid`, `Rocket League — 1v1`, `GeoGuessr`, `Wikipedia Race`, or `Nidhogg`.
 
-Provider imports (Steam first) and manual declarations build each player's accessible library.
+Each challenge may expose a small set of curated `RuleVariant`s. The pool stores the chosen variant separately from the base challenge.
 
-Examples:
+```text
+GeoGuessr — No Move            [Edit] [Remove]
 
-- Counter-Strike 2 — owned on Steam
-- Cyberpunk 2077 — owned on Steam
-- Valorant — manually declared
-- GeoGuessr — globally/browser accessible
+Edit ruleset:
+  ● No Move
+  ○ No Move + No Zoom
+  ○ No Rules
+```
 
-This layer is provider-oriented evidence. A title being present here does **not** mean the UI should recommend it.
-
-### 2. Curated challenge presets
-
-A `ChallengePreset` is the actual competitive unit the product can recommend.
-
-Examples:
-
-- `Dota 2 — 1v1 Mid`
-- `Counter-Strike 2 — 1v1`
-- `Rocket League — 1v1`
-- `GeoGuessr — No Move`
-- `Wikipedia Race`
-- `Nidhogg`
-
-This handles the case where a large game contains a small competition format without reintroducing a user-configurable rules engine.
-
-Challenge presets carry product curation such as:
-
-- Featured / Recommended / Niche / Manual Only
-- tags (FPS, party, strategy, knowledge, creator-popular, etc.)
-- lightweight setup notes
-- default preset for a game
-
-A game with no suitable preset remains discoverable via library search but does not pollute automatic Bro v Bro suggestions.
+The default rule variant is selected when the challenge is added. Players can edit it before the match starts. MVP does **not** require arbitrary free-form rule authoring.
 
 ### 3. Bro v Bro templates
 
-A `BroVBroTemplate` is a reusable collection of challenge presets.
+A `BroVBroTemplate` is a reusable starting pool: official starter, creator recreation, community/trending set, genre pack, or user-saved template.
 
-Template types include:
+For the normal format, a template copies the **pool**, not necessarily the play order. Coin flip + loser-picks-next still determines what gets played next.
 
-- official starter
-- creator match
-- community trending
-- genre pack
-- user-saved
+Template selection behavior supports `loser-picks-pool`, `ordered-replay`, and `random-pool`.
 
-Examples of the intended UX:
+### 4. Editable match pool
 
-> Play the Bro v Bro everyone is doing
+Applying a template creates an editable pre-match pool. It does not launch a replacement wizard.
 
-> Play the same Bro v Bro as a creator match
+Every item shows compatibility/readiness, ruleset, Edit, and Remove. Unavailable items remain visible until players explicitly remove them.
 
-> Start with Party Rivalry and customize it
-
-Templates are **starting points**, not immutable tournament formats. Applying a template against two players performs a compatibility pass:
-
-- available to both → ready
-- only one has it → needs install/access
-- neither has it → unavailable
-- browser/global challenge → ready
-
-The players can replace unavailable entries before starting.
-
-### Template selection behavior
-
-For the normal Bro v Bro format, a creator/template should usually copy the **challenge pool**, not a fixed play order.
-
-That preserves the core match mechanic:
-
-1. coin flip decides who chooses first
-2. first selector chooses from the template pool
-3. loser chooses the next challenge from the remaining pool
-4. repeat until the match is won
-
-`BroVBroTemplate.selectionBehavior` supports:
-
-- `loser-picks-pool` — default Bro v Bro behavior
-- `ordered-replay` — reproduce a known sequence when order matters
-- `random-pool` — same pool but selection is randomized
-
-So **“Play the Bro v Bro a creator just played”** normally means *start with the same challenge pool*, while an explicit exact-replay action can preserve the original order.
-
-## Build flow
+Below the pool, the UI shows **Suggested for both of you**. Suggestions require mutual/global access and a clear curated head-to-head mode, exclude challenges already in the pool, prioritize Featured/Recommended options, and append with one **Add** click.
 
 ```text
-Player A library ─┐
-                  ├─> Access intersection ─┐
-Player B library ─┘                       │
-                                          ├─> Curated Challenge Presets ─> Suggestions
-Global/browser challenges ────────────────┘                 │
-                                                            │
-Pinned / guaranteed picks ──────────────────────────────────┤
-                                                            │
-Selected Template ──────────────────────────────────────────┘
-                                                            │
-                                                            v
-                                                   Match Challenge Pool
+YOUR BRO V BRO
+
+Rocket League — 1v1                 ✓ both have it   [Remove]
+Dota 2 — 1v1 Mid                    ✓ both have it   [Remove]
+GeoGuessr — No Move                 ✓ browser        [Edit] [Remove]
+Nidhogg                             ↓ Rival needs it [Remove]
+
+SUGGESTED FOR BOTH OF YOU
+
+Ultimate Chicken Horse — Versus    ✓ both have it   [+ Add]
+CS2 — 1v1                           ✓ both have it   [+ Add]
+Chess                               ✓ browser        [+ Add]
 ```
 
-## Suggested setup experience
+There is deliberately no **Replace unavailable** action. The product should feel like editing a playlist: add what looks good, remove what does not, and edit the challenge variant where appropriate.
 
-The create screen should bias toward action rather than showing a giant library grid.
+## Setup flow
 
-1. **Pinned picks** — search and pin `Dota 2 — 1v1 Mid`, etc.
-2. **Suggested for both of you** — ranked curated challenges both players can access.
-3. **Templates** — starter, trending, creator, or saved playlists.
-4. **Browse all** — full library/catalog escape hatch when the user knows exactly what they want.
+```text
+Template / empty pool
+        │
+        v
+Editable Match Pool <──── Search / guaranteed picks
+        │
+        ├──── Edit ruleset
+        ├──── Remove
+        │
+        v
+Suggested for both players
+        │
+        └──── + Add ───────────────> Editable Match Pool
+        │
+        v
+Lock pool when match starts
+```
 
-Steam-only shared titles that have low/no Bro v Bro suitability should remain behind Browse/Search instead of appearing in the default suggestion rail.
+The suggestion engine stays deterministic for MVP. Useful signals are curated suitability, mutual access, creator-popular tag, and later installed state/community usage. No ML recommender is required.
 
-### Pinned versus must-play
+## Pinned versus must-play
 
-For MVP, a pinned challenge means **keep this in the selectable pool**. It does not promise the challenge will be played if the overall match is clinched before someone chooses it.
+A pinned/guaranteed setup pick means **keep this challenge in the selectable pool**. It does not require the challenge to be played if the overall match ends first. A future `must-play` feature would change match-completion semantics and should remain separate.
 
-A future `must-play` concept could force a challenge into the played set, but that changes match-completion semantics and should be added only if users actually need it.
+## Snapshot/versioning rule
 
-## Recommendation behavior for MVP
+The live match uses a snapshot of the final pre-match pool including the selected rule variant for every challenge. Editing a public template later must never mutate an existing or completed match.
 
-No ML system is needed.
-
-Start with deterministic weighting:
-
-- curated suitability
-- mutual access
-- pinned selections
-- creator-popular tag
-- installed/readiness later when that signal exists
-- template/community usage later when telemetry exists
-
-The important invariant is:
-
-> **Shared ownership is an eligibility signal, never sufficient recommendation evidence.**
-
-## Template versioning and attribution
-
-Creator/community templates should have stable IDs plus versions/date labels. A completed match should retain the exact challenge list it used even if the public template is edited later.
-
-A public match can expose **Play This Bro v Bro**, which creates a new editable challenge from a snapshot of that match's presets while preserving source attribution.
-
-Until a creator explicitly partners with the product, recreated creator templates should be labeled as community/source-attributed recreations rather than implying they are official or endorsed.
+A public creator/community match can expose **Play This Bro v Bro**, which creates a new editable pool from that snapshot while retaining source attribution. Until a creator explicitly partners with the product, recreated creator templates should be labeled as community/source-attributed rather than official or endorsed.
