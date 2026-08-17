@@ -30,3 +30,14 @@ test("games outside the two-player eligible set are not suggested", () => {
   const suggestions = rankChallengeSuggestions(demoChallengePresets, new Set(["nidhogg"]));
   assert.deepEqual(suggestions.map((entry) => entry.preset.gameId), ["nidhogg"]);
 });
+
+test("suggestion rail excludes challenges already in the editable pool", () => {
+  const suggestions = rankChallengeSuggestions(
+    demoChallengePresets,
+    new Set(["dota-2", "rocket-league", "nidhogg"]),
+    new Set(),
+    new Set(["dota-2-1v1-mid", "rocket-league-1v1"]),
+  );
+
+  assert.deepEqual(suggestions.map((entry) => entry.preset.id), ["nidhogg-standard"]);
+});
