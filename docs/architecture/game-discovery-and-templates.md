@@ -82,6 +82,25 @@ Templates are **starting points**, not immutable tournament formats. Applying a 
 
 The players can replace unavailable entries before starting.
 
+### Template selection behavior
+
+For the normal Bro v Bro format, a creator/template should usually copy the **challenge pool**, not a fixed play order.
+
+That preserves the core match mechanic:
+
+1. coin flip decides who chooses first
+2. first selector chooses from the template pool
+3. loser chooses the next challenge from the remaining pool
+4. repeat until the match is won
+
+`BroVBroTemplate.selectionBehavior` supports:
+
+- `loser-picks-pool` — default Bro v Bro behavior
+- `ordered-replay` — reproduce a known sequence when order matters
+- `random-pool` — same pool but selection is randomized
+
+So **“Play the Bro v Bro a creator just played”** normally means *start with the same challenge pool*, while an explicit exact-replay action can preserve the original order.
+
 ## Build flow
 
 ```text
@@ -96,19 +115,25 @@ Pinned / guaranteed picks ──────────────────
 Selected Template ──────────────────────────────────────────┘
                                                             │
                                                             v
-                                                    Match Game Pool
+                                                   Match Challenge Pool
 ```
 
 ## Suggested setup experience
 
 The create screen should bias toward action rather than showing a giant library grid.
 
-1. **Guaranteed picks** — search and pin `Dota 2 — 1v1 Mid`, etc.
+1. **Pinned picks** — search and pin `Dota 2 — 1v1 Mid`, etc.
 2. **Suggested for both of you** — ranked curated challenges both players can access.
 3. **Templates** — starter, trending, creator, or saved playlists.
 4. **Browse all** — full library/catalog escape hatch when the user knows exactly what they want.
 
 Steam-only shared titles that have low/no Bro v Bro suitability should remain behind Browse/Search instead of appearing in the default suggestion rail.
+
+### Pinned versus must-play
+
+For MVP, a pinned challenge means **keep this in the selectable pool**. It does not promise the challenge will be played if the overall match is clinched before someone chooses it.
+
+A future `must-play` concept could force a challenge into the played set, but that changes match-completion semantics and should be added only if users actually need it.
 
 ## Recommendation behavior for MVP
 
@@ -118,7 +143,7 @@ Start with deterministic weighting:
 
 - curated suitability
 - mutual access
-- pinned/guaranteed selections
+- pinned selections
 - creator-popular tag
 - installed/readiness later when that signal exists
 - template/community usage later when telemetry exists
@@ -127,8 +152,10 @@ The important invariant is:
 
 > **Shared ownership is an eligibility signal, never sufficient recommendation evidence.**
 
-## Template versioning
+## Template versioning and attribution
 
 Creator/community templates should have stable IDs plus versions/date labels. A completed match should retain the exact challenge list it used even if the public template is edited later.
 
 A public match can expose **Play This Bro v Bro**, which creates a new editable challenge from a snapshot of that match's presets while preserving source attribution.
+
+Until a creator explicitly partners with the product, recreated creator templates should be labeled as community/source-attributed recreations rather than implying they are official or endorsed.
