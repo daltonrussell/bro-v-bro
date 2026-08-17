@@ -1,7 +1,7 @@
-import type { ChallengePreset } from "@/modules/catalog/domain/challenge-preset";
-import { getRuleVariant } from "@/modules/catalog/domain/challenge-preset";
-import type { MatchPoolSource } from "@/modules/catalog/domain/match-pool";
-import type { Challenge, ChallengePoolItem, PoolProposal } from "./types";
+import type { ChallengePreset } from "../../catalog/domain/challenge-preset.ts";
+import { getRuleVariant } from "../../catalog/domain/challenge-preset.ts";
+import type { MatchPoolSource } from "../../catalog/domain/match-pool.ts";
+import type { Challenge, ChallengePoolItem, PoolProposal } from "./types.ts";
 
 export class ChallengeSetupError extends Error {}
 
