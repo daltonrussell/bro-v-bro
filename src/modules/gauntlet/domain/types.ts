@@ -10,6 +10,13 @@ export type MatchFormat = {
   firstTo: number;
 };
 
+export type ChallengeSelectionSnapshot = {
+  gameId: string;
+  presetId: string;
+  ruleVariantId: string;
+  label: string;
+};
+
 export type PendingRoundResult = {
   gameId: string;
   reportedBy: PlayerId;
@@ -37,6 +44,8 @@ export type GauntletSession = {
   players: readonly [Player, Player];
   format: MatchFormat;
   eligibleGameIds: readonly string[];
+  /** Exact pre-match challenge/rules selections agreed by both players. */
+  challengeSelections?: readonly ChallengeSelectionSnapshot[];
   usedGameIds: readonly string[];
   status: SessionStatus;
   selectorId: PlayerId | null;

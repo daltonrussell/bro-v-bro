@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export function JoinChallengeForm({ challengeId, inviteToken }: { challengeId: string; inviteToken: string }) {
   const router = useRouter();
-  const [hostName, setHostName] = useState("Rival");
+  const [guestName, setGuestName] = useState("Rival");
   const [challengeHost, setChallengeHost] = useState<string>("Someone");
   const [firstTo, setFirstTo] = useState<number>(5);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +30,12 @@ export function JoinChallengeForm({ challengeId, inviteToken }: { challengeId: s
       const response = await fetch(`/api/challenges/${challengeId}/join`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ inviteToken, opponentName: hostName }),
+        body: JSON.stringify({ inviteToken, opponentName: guestName }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Unable to join");
-      sessionStorage.setItem(`bvb-player-token:${data.sessionId}`, data.participantToken);
-      router.push(`/match/${data.sessionId}?token=${encodeURIComponent(data.participantToken)}`);
+      sessionStorage.setItem(`bvb-guest-token:${challengeId}`, data.participantToken);
+      router.push(`/challenge/${challengeId}?token=${encodeURIComponent(data.participantToken)}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to join");
       setBusy(false);
@@ -48,10 +48,11 @@ export function JoinChallengeForm({ challengeId, inviteToken }: { challengeId: s
         <div className="text-xs font-black uppercase tracking-[0.22em] text-[#f2b84b]">You got called out</div>
         <h1 className="mt-3 text-5xl font-black leading-[.92] tracking-[-0.055em]">{challengeHost}<br/><span className="text-white/25">WANTS THE</span><br/>BRO V BRO.</h1>
         <div className="mt-6 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/60">First to {firstTo}</div>
+        <p className="mt-5 text-sm font-semibold leading-6 text-white/50">Join the setup room first. The host builds the official game pool; you can suggest games, suggest rules, and veto picks before either of you ready up.</p>
         <label className="mt-7 block text-xs font-black uppercase tracking-[0.17em] text-white/45">What should we call you?</label>
-        <input value={hostName} onChange={(e) => setHostName(e.target.value)} className="mt-2 w-full rounded-xl border border-white/15 bg-white/[.06] px-4 py-4 text-xl font-black outline-none focus:border-[#8d82ff]" />
+        <input value={guestName} onChange={(e) => setGuestName(e.target.value)} className="mt-2 w-full rounded-xl border border-white/15 bg-white/[.06] px-4 py-4 text-xl font-black outline-none focus:border-[#8d82ff]" />
         {error && <div className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-bold text-red-200">{error}</div>}
-        <button disabled={busy || Boolean(error && error.includes("Invalid invite"))} className="mt-6 w-full rounded-xl bg-[#f2b84b] px-5 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#11131a] shadow-[4px_4px_0_#8d82ff] disabled:opacity-40">{busy ? "Joining…" : "Accept challenge"}</button>
+        <button disabled={busy || Boolean(error && error.includes("Invalid invite")) || !guestName.trim()} className="mt-6 w-full rounded-xl bg-[#f2b84b] px-5 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#11131a] shadow-[4px_4px_0_#8d82ff] disabled:opacity-40">{busy ? "Joining…" : "Enter setup room"}</button>
       </form>
     </main>
   );

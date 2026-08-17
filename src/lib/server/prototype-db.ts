@@ -38,6 +38,13 @@ export function prototypeDb(): DatabaseSync {
       session_id text,
       created_at text not null default current_timestamp
     );
+    create table if not exists prototype_challenge_setup (
+      challenge_id text primary key,
+      version integer not null,
+      payload text not null,
+      updated_at text not null default current_timestamp,
+      foreign key (challenge_id) references prototype_challenges(id) on delete cascade
+    );
     create table if not exists prototype_session_access (
       session_id text not null,
       player_id text not null,

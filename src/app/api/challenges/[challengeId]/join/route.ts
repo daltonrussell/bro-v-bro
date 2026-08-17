@@ -6,15 +6,15 @@ export async function POST(request: Request, context: { params: Promise<{ challe
   try {
     const { challengeId } = await context.params;
     const body = await request.json() as { inviteToken?: string; opponentName?: string };
-    const result = await prototypeServices().challengeService.join({
+    const result = prototypeServices().challengeService.join({
       challengeId,
       inviteToken: body.inviteToken ?? "",
       opponentName: body.opponentName ?? "",
     });
     return Response.json({
-      sessionId: result.session.id,
+      challenge: result.challenge,
       participantToken: result.opponentToken,
-      playerId: "player-b",
+      viewerRole: "guest",
     }, { status: 201 });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Unable to join challenge" }, { status: 400 });

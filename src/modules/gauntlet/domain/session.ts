@@ -1,4 +1,4 @@
-import type { GauntletSession, PlayerId, RoundResult } from "./types.ts";
+import type { ChallengeSelectionSnapshot, GauntletSession, PlayerId, RoundResult } from "./types.ts";
 
 export class GauntletRuleError extends Error {}
 
@@ -9,6 +9,7 @@ export function createSession(input: {
   id: string;
   firstTo: number;
   eligibleGameIds: readonly string[];
+  challengeSelections?: readonly ChallengeSelectionSnapshot[];
   playerAName: string;
   playerBName: string;
 }): GauntletSession {
@@ -23,6 +24,7 @@ export function createSession(input: {
     ],
     format: { firstTo: input.firstTo },
     eligibleGameIds: [...new Set(input.eligibleGameIds)],
+    challengeSelections: input.challengeSelections ? [...input.challengeSelections] : undefined,
     usedGameIds: [],
     status: "awaiting-coin-flip",
     selectorId: null,
