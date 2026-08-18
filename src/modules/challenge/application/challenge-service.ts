@@ -3,10 +3,12 @@ import { createSession } from "@/modules/gauntlet/domain/session";
 import type { GauntletSessionRepository } from "@/modules/gauntlet/application/session-repository";
 import { demoChallengePresets, formatChallengeSelection, getRuleVariant } from "@/modules/catalog/domain/challenge-preset";
 import type { MatchPoolSource } from "@/modules/catalog/domain/match-pool";
+import { demoTemplates } from "@/modules/catalog/domain/template";
 import {
   acceptProposal,
   addPoolItem,
   addProposal,
+  applyTemplate,
   assertStartable,
   changePoolRules,
   dismissProposal,
@@ -21,6 +23,7 @@ import { newToken } from "../infrastructure/token";
 export type ChallengeViewerRole = "host" | "guest" | "invitee";
 
 export type ChallengeCommand =
+  | { type: "apply-template"; templateId: string }
   | { type: "add"; presetId: string; ruleVariantId?: string; source?: MatchPoolSource }
   | { type: "remove"; presetId: string }
   | { type: "change-rules"; presetId: string; ruleVariantId: string }
@@ -52,6 +55,7 @@ export class ChallengeService {
       firstTo: input.firstTo,
       pool: [],
       proposals: [],
+      sourceTemplateId: null,
       hostReady: false,
       guestReady: false,
       version: 1,
@@ -103,6 +107,13 @@ export class ChallengeService {
 
     let next = challenge;
     switch (input.command.type) {
+      case "apply-template": {
+        this.assertHost(role);
+        const template = demoTemplates.find((candidate) => candidate.id === input.command.templateId);
+        if (!template) throw new Error(`Unknown template ${input.command.templateId}`);
+        next = applyTemplate(challenge, template, demoChallengePresets);
+        break;
+      }
       case "add": {
         this.assertHost(role);
         const preset = this.preset(input.command.presetId);
