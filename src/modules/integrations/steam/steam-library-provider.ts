@@ -1,4 +1,4 @@
-import { demoGames } from "@/modules/catalog/domain/game";
+import { demoGames } from "../../catalog/domain/game.ts";
 
 export type ImportedGame = {
   provider: "steam";
