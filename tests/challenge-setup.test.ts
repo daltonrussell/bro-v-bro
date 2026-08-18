@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { demoChallengePresets } from "../src/modules/catalog/domain/challenge-preset.ts";
+import { demoTemplates } from "../src/modules/catalog/domain/template.ts";
 import {
   acceptProposal,
   addPoolItem,
   addProposal,
+  applyTemplate,
   assertStartable,
   changePoolRules,
   setGuestVeto,
@@ -20,6 +22,7 @@ function baseChallenge(): Challenge {
     firstTo: 3,
     pool: [],
     proposals: [],
+    sourceTemplateId: null,
     hostReady: false,
     guestReady: false,
     version: 1,
@@ -34,6 +37,40 @@ const preset = (id: string) => {
   if (!value) throw new Error(`missing preset ${id}`);
   return value;
 };
+
+test("template seeds canonical pool with default rulesets and remains editable", () => {
+  const template = demoTemplates.find((candidate) => candidate.id === "starter-five");
+  if (!template) throw new Error("missing starter template");
+
+  let challenge = applyTemplate(baseChallenge(), template, demoChallengePresets);
+  assert.equal(challenge.sourceTemplateId, "starter-five");
+  assert.deepEqual(challenge.pool.map((item) => item.presetId), template.challengePresetIds);
+  assert.ok(challenge.pool.every((item) => item.source === "template" && !item.guestVetoed));
+  assert.equal(challenge.pool.find((item) => item.presetId === "geoguessr-duel")?.ruleVariantId, "no-move");
+
+  challenge = changePoolRules(challenge, preset("geoguessr-duel"), "no-rules");
+  assert.equal(challenge.pool.find((item) => item.presetId === "geoguessr-duel")?.ruleVariantId, "no-rules");
+});
+
+test("applying a template clears stale proposals and readiness", () => {
+  const template = demoTemplates.find((candidate) => candidate.id === "starter-five");
+  if (!template) throw new Error("missing starter template");
+  let challenge = addPoolItem(baseChallenge(), preset("chess-standard"));
+  challenge = addProposal(challenge, {
+    id: "proposal-stale",
+    type: "add-challenge",
+    presetId: "nidhogg-standard",
+    ruleVariantId: "standard",
+    createdAt: "2026-08-17T00:00:00.000Z",
+  });
+  challenge = setReady(challenge, "host", true);
+  challenge = setReady(challenge, "guest", true);
+
+  challenge = applyTemplate(challenge, template, demoChallengePresets);
+  assert.equal(challenge.proposals.length, 0);
+  assert.equal(challenge.hostReady, false);
+  assert.equal(challenge.guestReady, false);
+});
 
 test("canonical pool changes reset both readiness flags", () => {
   let challenge = addPoolItem(baseChallenge(), preset("rocket-league-1v1"));
