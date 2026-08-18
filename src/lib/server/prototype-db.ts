@@ -52,6 +52,27 @@ export function prototypeDb(): DatabaseSync {
       primary key (session_id, player_id),
       unique (session_id, token_hash)
     );
+    create table if not exists prototype_steam_link_states (
+      state text primary key,
+      challenge_id text not null,
+      role text not null,
+      participant_token text not null,
+      expires_at integer not null,
+      foreign key (challenge_id) references prototype_challenges(id) on delete cascade
+    );
+    create table if not exists prototype_steam_connections (
+      challenge_id text not null,
+      role text not null,
+      steam_id text not null,
+      persona_name text not null,
+      avatar_url text,
+      profile_url text,
+      library_status text not null,
+      games_json text not null,
+      synced_at text not null,
+      primary key (challenge_id, role),
+      foreign key (challenge_id) references prototype_challenges(id) on delete cascade
+    );
   `);
   target.__broVBROPrototypeDb = db;
   return db;
