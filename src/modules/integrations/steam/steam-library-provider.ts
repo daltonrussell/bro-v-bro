@@ -29,11 +29,12 @@ export interface SteamLibraryProvider {
 
 export class SteamWebApiLibraryProvider implements SteamLibraryProvider {
   readonly configured: boolean;
+  private readonly apiKey: string;
+  private readonly fetchImpl: typeof fetch;
 
-  constructor(
-    private readonly apiKey: string,
-    private readonly fetchImpl: typeof fetch = fetch,
-  ) {
+  constructor(apiKey: string, fetchImpl: typeof fetch = fetch) {
+    this.apiKey = apiKey;
+    this.fetchImpl = fetchImpl;
     this.configured = Boolean(apiKey.trim());
   }
 
