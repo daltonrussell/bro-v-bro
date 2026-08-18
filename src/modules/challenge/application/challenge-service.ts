@@ -109,8 +109,9 @@ export class ChallengeService {
     switch (input.command.type) {
       case "apply-template": {
         this.assertHost(role);
-        const template = demoTemplates.find((candidate) => candidate.id === input.command.templateId);
-        if (!template) throw new Error(`Unknown template ${input.command.templateId}`);
+        const templateId = input.command.templateId;
+        const template = demoTemplates.find((candidate) => candidate.id === templateId);
+        if (!template) throw new Error(`Unknown template ${templateId}`);
         next = applyTemplate(challenge, template, demoChallengePresets);
         break;
       }
