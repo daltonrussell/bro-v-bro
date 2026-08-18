@@ -1,12 +1,44 @@
 import type { ChallengePreset } from "../../catalog/domain/challenge-preset.ts";
 import { getRuleVariant } from "../../catalog/domain/challenge-preset.ts";
 import type { MatchPoolSource } from "../../catalog/domain/match-pool.ts";
+import type { BroVBroTemplate } from "../../catalog/domain/template.ts";
 import type { Challenge, ChallengePoolItem, PoolProposal } from "./types.ts";
 
 export class ChallengeSetupError extends Error {}
 
 export function maximumRounds(firstTo: number): number {
   return firstTo * 2 - 1;
+}
+
+export function applyTemplate(
+  challenge: Challenge,
+  template: BroVBroTemplate,
+  presets: readonly ChallengePreset[],
+): Challenge {
+  const byId = new Map(presets.map((preset) => [preset.id, preset]));
+  const pool = template.challengePresetIds.map((presetId) => {
+    const preset = byId.get(presetId);
+    if (!preset) throw new ChallengeSetupError(`Template ${template.id} references unknown preset ${presetId}`);
+    return {
+      presetId: preset.id,
+      ruleVariantId: preset.defaultRuleVariantId,
+      source: "template" as const,
+      guestVetoed: false,
+    };
+  });
+
+  const representedGames = new Set<string>();
+  for (const item of pool) {
+    const gameId = byId.get(item.presetId)!.gameId;
+    if (representedGames.has(gameId)) throw new ChallengeSetupError(`Template ${template.id} contains more than one challenge for ${gameId}`);
+    representedGames.add(gameId);
+  }
+
+  return configurationChanged(challenge, {
+    pool,
+    proposals: [],
+    sourceTemplateId: template.id,
+  });
 }
 
 export function addPoolItem(
@@ -114,7 +146,7 @@ export function poolItemForPreset(challenge: Challenge, presetId: string): Chall
 
 function configurationChanged(
   challenge: Challenge,
-  patch: Partial<Pick<Challenge, "pool" | "proposals">>,
+  patch: Partial<Pick<Challenge, "pool" | "proposals" | "sourceTemplateId">>,
 ): Challenge {
   return bump(challenge, { ...patch, hostReady: false, guestReady: false });
 }

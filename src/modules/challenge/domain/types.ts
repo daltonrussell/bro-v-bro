@@ -32,6 +32,7 @@ export type Challenge = {
   firstTo: number;
   pool: readonly ChallengePoolItem[];
   proposals: readonly PoolProposal[];
+  sourceTemplateId: string | null;
   hostReady: boolean;
   guestReady: boolean;
   version: number;

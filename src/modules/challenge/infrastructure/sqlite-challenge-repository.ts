@@ -45,6 +45,7 @@ export class SqliteChallengeRepository {
     const fallback = {
       pool: [],
       proposals: [],
+      sourceTemplateId: null,
       hostReady: false,
       guestReady: false,
       status: row.session_id ? "started" : row.opponent_name ? "configuring" : "waiting-for-opponent",
@@ -60,6 +61,7 @@ export class SqliteChallengeRepository {
       firstTo: Number(row.first_to),
       pool: setup.pool ?? [],
       proposals: setup.proposals ?? [],
+      sourceTemplateId: setup.sourceTemplateId ?? null,
       hostReady: setup.hostReady ?? false,
       guestReady: setup.guestReady ?? false,
       version: Number(row.setup_version ?? 1),
@@ -131,6 +133,7 @@ function setupPayload(challenge: Challenge) {
   return {
     pool: challenge.pool,
     proposals: challenge.proposals,
+    sourceTemplateId: challenge.sourceTemplateId,
     hostReady: challenge.hostReady,
     guestReady: challenge.guestReady,
     status: challenge.status,
