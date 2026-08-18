@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { demoGames } from "@/modules/catalog/domain/game";
 import { demoChallengePresets, formatChallengeSelection, getRuleVariant } from "@/modules/catalog/domain/challenge-preset";
+import { demoTemplates } from "@/modules/catalog/domain/template";
 import type { Challenge as ChallengeState } from "@/modules/challenge/domain/types";
 import { maximumRounds } from "@/modules/challenge/domain/setup";
 import type { ChallengeCommand, ChallengeViewerRole } from "@/modules/challenge/application/challenge-service";
@@ -87,6 +88,7 @@ export function ChallengeLobby({ challengeId, token }: { challengeId: string; to
     .filter((preset) => !poolPresetIds.has(preset.id))
     .filter((preset) => preset.suitability === "featured" || preset.suitability === "recommended")
     .sort((a, b) => Number(b.suitability === "featured") - Number(a.suitability === "featured") || a.name.localeCompare(b.name));
+  const sourceTemplate = demoTemplates.find((template) => template.id === challenge.sourceTemplateId);
 
   if (viewerRole === "invitee") {
     return <LobbyShell><div className="rounded-3xl border-2 border-[#11131a] bg-[#f1ede4] p-8"><div className="text-3xl font-black">Use the invite page to join this Bro v Bro.</div></div></LobbyShell>;
@@ -103,6 +105,7 @@ export function ChallengeLobby({ challengeId, token }: { challengeId: string; to
               <Stat label="Format" value={`First to ${challenge.firstTo}`} />
               <Stat label="Pool" value={`${challenge.pool.length} / ${requiredPoolSize}`} />
             </div>
+            {sourceTemplate && <div className="mt-3 rounded-xl border border-white/10 bg-white/[.05] px-4 py-3 text-xs font-bold text-white/55">Started from <span className="text-white">{sourceTemplate.name}</span>. The pool is fully editable.</div>}
 
             {!challenge.opponentName && isHost && (
               <div className="mt-7 rounded-2xl border border-[#f2b84b]/30 bg-[#f2b84b]/10 p-4">
@@ -164,6 +167,42 @@ export function ChallengeLobby({ challengeId, token }: { challengeId: string; to
         </aside>
 
         <div className="space-y-6">
+          <section className="rounded-[28px] border-2 border-[#11131a] bg-[#11131a] p-5 text-[#f1ede4] sm:p-7">
+            <div className="flex items-end justify-between gap-4 border-b border-white/15 pb-4">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-[#f2b84b]">Start from a template</div>
+                <div className="mt-1 text-3xl font-black tracking-[-0.045em]">Play a known Bro v Bro.</div>
+              </div>
+              <div className="hidden text-right text-xs font-bold text-white/35 sm:block">Templates seed the pool.<br/>You can edit everything.</div>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {demoTemplates.map((template) => {
+                const active = challenge.sourceTemplateId === template.id;
+                return (
+                  <div key={template.id} className={`rounded-2xl border p-4 ${active ? "border-[#f2b84b] bg-[#f2b84b]/10" : "border-white/15 bg-white/[.04]"}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-[.15em] text-white/35">{template.type.replaceAll("-", " ")}</div>
+                        <div className="mt-1 text-xl font-black">{template.name}</div>
+                      </div>
+                      <div className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-black text-white/55">{template.challengePresetIds.length} games</div>
+                    </div>
+                    <p className="mt-2 text-sm leading-5 text-white/45">{template.description}</p>
+                    {isHost ? (
+                      <button
+                        disabled={busy !== null || !challenge.opponentName}
+                        onClick={() => command({ type: "apply-template", templateId: template.id }, `template-${template.id}`)}
+                        className="mt-4 w-full rounded-xl bg-[#f1ede4] px-3 py-2 text-xs font-black text-[#11131a] disabled:opacity-30"
+                      >{active ? "Reapply template" : challenge.pool.length > 0 ? "Use template · replaces pool" : "Use template"}</button>
+                    ) : (
+                      <div className="mt-4 text-xs font-bold text-white/35">Host can apply this template.</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="rounded-[28px] border-2 border-[#11131a] bg-[#f1ede4] p-5 sm:p-7">
             <div className="flex items-end justify-between gap-4 border-b-2 border-[#11131a] pb-4">
               <div>
@@ -176,7 +215,7 @@ export function ChallengeLobby({ challengeId, token }: { challengeId: string; to
             {challenge.pool.length === 0 ? (
               <div className="mt-5 rounded-2xl border-2 border-dashed border-black/20 p-8 text-center">
                 <div className="text-xl font-black">No games yet.</div>
-                <div className="mt-1 text-sm font-semibold opacity-50">{isHost ? "Add challenges from the suggestions below." : "Suggest something to the host below."}</div>
+                <div className="mt-1 text-sm font-semibold opacity-50">{isHost ? "Use a template or add challenges from the suggestions below." : "Suggest something to the host below."}</div>
               </div>
             ) : (
               <div className="mt-5 grid gap-3">
